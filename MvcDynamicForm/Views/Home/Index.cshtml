@@ -1,0 +1,140 @@
+﻿@model List<FormFiedlsModel>
+@{
+    ViewData["Title"] = "Home Page";
+}
+
+<style>
+    div {
+        margin-top: 10px;
+    }
+</style>
+<div class="text-center">
+    <h1 class="display-4">Welcome To Dynamic Page</h1>
+    <p>This Form will depend upon configuration on server side, You can configure which control and values should have.</p>
+</div>
+
+
+@using (Html.BeginForm())
+{
+    @foreach (var item in Model)
+    {
+        var i = 0;
+        switch (item.FieldType)
+        {
+            case ControlType.Checkbox:
+                <div>
+                    @Html.CheckBox(item.DisplayTitle, Convert.ToBoolean(item.UserValue), new { id = item.Id })
+                    @Html.Label(item.DisplayTitle)
+                </div>
+                break;
+            case ControlType.CheckboxList:
+                <div>
+                    <fieldset>
+                        <legend>@Html.Label(item.DisplayTitle)</legend>
+                        @foreach (var value in item.PreValues)
+                        {
+                            <div>
+                                @Html.CheckBox(value.Text, Convert.ToBoolean(value.Value), new { id = value.ControlId })
+                                @Html.Label(item.DisplayTitle)
+                            </div>
+                        }
+                    </fieldset>
+                </div>
+                break;
+            case ControlType.TextArea:
+
+                <div>
+                    <p>@item.DisplayTitle:</p>
+                    @Html.TextArea(item.DisplayTitle, Convert.ToString(item.UserValue), new { id = item.Id })
+                </div>
+                break;
+            case ControlType.Textbox:
+
+                <div>
+                    <p>@item.DisplayTitle:</p>
+                    @Html.TextBox(item.DisplayTitle, Convert.ToString(item.UserValue), new { id = item.Id })
+                </div>
+                break;
+            case ControlType.Radiobutton:
+
+                <div>
+                    @if (Convert.ToBoolean(item.UserValue))
+                        @Html.RadioButton(item.DisplayTitle, Convert.ToBoolean(item.UserValue), new { id = item.Id, @checked = true })
+                    else
+                        @Html.RadioButton(item.DisplayTitle, Convert.ToBoolean(item.UserValue), new { id = item.Id })
+
+                    @Html.Label(item.DisplayTitle)
+                </div>
+                break;
+            case ControlType.RadioButtonlist:
+
+                <div>
+                    <fieldset>
+                        <legend>@Html.Label(item.DisplayTitle)</legend>
+                        @foreach (var value in item.PreValues)
+                        {
+                            <div>
+                                @if (value.Value == "true")
+                                    @Html.RadioButton(value.Text, Convert.ToBoolean(value.Value), new { id = value.ControlId, name = item.Id, @checked = true })
+                                else
+                                    @Html.RadioButton(value.Text, Convert.ToBoolean(value.Value), new { id = value.ControlId, name = item.Id })
+
+                                @Html.Label(item.DisplayTitle)
+                            </div>
+                        }
+                    </fieldset>
+                </div>
+                break;
+            case ControlType.Dropdown:
+
+                <div>
+                    <p>@item.DisplayTitle:</p>
+                    @Html.DropDownList("myCombo", new SelectList(item.PreValues, "Value", "Text", item.UserValue), new { id = item.Id })
+                </div>
+                break;
+        }
+    }
+
+    <div style="text-align:center; margin:5px; padding:5px; border: 1px solid gray">
+        <button onclick="return SaveForm();">Save All Form</button>
+    </div>
+}
+
+<script>
+    var m = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model))
+        function SaveForm() {
+            $.each(m, function () {
+                var obj = this;
+                if (obj.FieldType == "0" || obj.FieldType == "1" || obj.FieldType == "4") {
+                    this.UserValue = $("#" + obj.Id).val();
+                }
+                if (obj.FieldType == "2" || obj.FieldType == "5") {
+                    this.UserValue = $("#" + obj.Id).prop('checked');
+                }
+                if (obj.FieldType == "3" || obj.FieldType == "6") {
+                    $.each(this.PreValues, function () {
+                        var objChild = this;
+                        this.Value = $("#" + objChild.ControlId).prop('checked');
+                    });
+                }
+            });
+
+            $.ajax(
+                {
+                    type: 'POST',
+                    dataType: 'JSON',
+                    url: '/Home/SaveForm',
+                    data: { jsonInput: JSON.stringify(m) },
+                    success:
+                        function (response) {
+                            alert("Form data saved successfully.");
+                        },
+                    error:
+                        function (response) {
+                            alert("Error: " + response);
+                        }
+                });
+
+            return false;
+        }
+</script>
